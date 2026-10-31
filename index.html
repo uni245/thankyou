@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>축전 명예의 전당</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+KR:wght@300;400;600&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { display: ['Cinzel','Noto Serif KR','serif'], serif: ['Noto Serif KR','serif'] },
+    colors: { gold: { 300:'#f1deb0', 400:'#e4c98a', 500:'#c9a55a', 600:'#a8843c' } }
+  } }
+}
+</script>
+<style>
+  html, body { background:#07070a; color:#e9e4d8; font-family:'Noto Serif KR',serif; overscroll-behavior:none; }
+  body::before { /* 은은한 비네팅 + 조명 */
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% -5%, rgba(201,165,90,.18), transparent 70%),
+      radial-gradient(ellipse 80% 60% at 50% 120%, rgba(90,60,140,.12), transparent 70%);
+  }
+  .gold-text { background:linear-gradient(180deg,#fbeec6 0%,#c9a55a 55%,#8a6a2a 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .shimmer { background-size:200% auto; animation:shimmer 6s linear infinite;
+    background-image:linear-gradient(110deg,#8a6a2a 0%,#fbeec6 30%,#c9a55a 50%,#fbeec6 70%,#8a6a2a 100%); }
+  @keyframes shimmer { to { background-position:-200% center; } }
+  @keyframes floaty { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+  @keyframes rise { from{ opacity:0; transform:translateY(24px);} to{ opacity:1; transform:none;} }
+  .rise { animation:rise .9s cubic-bezier(.2,.7,.2,1) both; }
+  #intro, #main { transition:opacity 1.2s ease, transform 1.2s ease, filter 1.2s ease; }
+  .fade-out { opacity:0 !important; transform:scale(1.06); filter:blur(8px); pointer-events:none; }
+  .hidden-main { opacity:0; transform:translateY(20px); }
+  /* 카드 */
+  .card { position:relative; border-radius:14px; overflow:hidden; cursor:pointer; background:#101015;
+    border:1px solid rgba(201,165,90,.18); box-shadow:0 10px 30px -12px rgba(0,0,0,.8);
+    transition:transform .45s cubic-bezier(.2,.7,.2,1), border-color .45s, box-shadow .45s;
+    opacity:0; transform:translateY(24px); }
+  .card.in { opacity:1; transform:none; transition:opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1), border-color .45s, box-shadow .45s; }
+  .card:hover { transform:translateY(-6px); border-color:rgba(228,201,138,.7);
+    box-shadow:0 20px 50px -15px rgba(201,165,90,.35), 0 0 0 1px rgba(228,201,138,.25); }
+  .card img { width:100%; height:100%; object-fit:cover; transition:transform .8s ease; }
+  .card:hover img { transform:scale(1.06); }
+  .card .cap { position:absolute; inset:auto 0 0 0; padding:2.2rem .8rem .7rem; text-align:center;
+    background:linear-gradient(to top, rgba(0,0,0,.88), transparent);
+    opacity:0; transform:translateY(8px); transition:.4s; font-size:.9rem; letter-spacing:.04em; }
+  .card:hover .cap, .card:focus-visible .cap { opacity:1; transform:none; }
+  @media (hover:none){ .card .cap { opacity:1; transform:none; font-size:.8rem; } }
+  /* 모달 */
+  #modal { transition:opacity .4s ease; }
+  #modal.show { opacity:1; pointer-events:auto; }
+  #modal-img { transition:opacity .3s ease, transform .3s ease; max-height:72vh; }
+  /* 슬라이더 */
+  input[type=range]{ -webkit-appearance:none; appearance:none; height:3px; background:rgba(201,165,90,.35); border-radius:2px; outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#e4c98a; cursor:pointer; box-shadow:0 0 8px rgba(228,201,138,.8); }
+  input[type=range]::-moz-range-thumb{ width:12px; height:12px; border:0; border-radius:50%; background:#e4c98a; cursor:pointer; }
+  .eq span { display:inline-block; width:3px; background:#e4c98a; margin:0 1px; border-radius:1px; height:4px; }
+  .eq.on span { animation:eq 1s ease-in-out infinite; }
+  .eq.on span:nth-child(2){ animation-delay:.2s } .eq.on span:nth-child(3){ animation-delay:.4s } .eq.on span:nth-child(4){ animation-delay:.1s }
+  @keyframes eq { 0%,100%{ height:4px } 50%{ height:14px } }
+  .dust { position:absolute; border-radius:50%; background:rgba(228,201,138,.55); filter:blur(1px); animation:drift linear infinite; }
+  @keyframes drift { from{ transform:translateY(0); opacity:0 } 10%{opacity:1} 90%{opacity:1} to{ transform:translateY(-110vh); opacity:0 } }
+  /* ===== 추가 배경/연출 ===== */
+  .layer { position:absolute; inset:0; pointer-events:none; }
+  .sunburst { position:absolute; left:50%; top:50%; width:170vmax; height:170vmax; margin:-85vmax 0 0 -85vmax;
+    background:repeating-conic-gradient(from 0deg, rgba(228,201,138,.085) 0deg 3deg, transparent 3deg 15deg);
+    -webkit-mask-image:radial-gradient(circle, #000 0%, transparent 38%); mask-image:radial-gradient(circle, #000 0%, transparent 38%);
+    animation:spin 120s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spin-slow { animation:spin 90s linear infinite; }
+  .spin-rev { animation:spin 140s linear infinite reverse; }
+  .spot { background:radial-gradient(circle 280px at var(--mx,50%) var(--my,50%), rgba(228,201,138,.16), transparent 70%); }
+  .corner { position:absolute; width:clamp(36px,7vw,84px); height:clamp(36px,7vw,84px); border-color:rgba(201,165,90,.55); opacity:0; animation:rise 1.2s ease 1.6s both; }
+  .corner.tl{ top:18px; left:18px; border-top:1px solid; border-left:1px solid; }
+  .corner.tr{ top:18px; right:18px; border-top:1px solid; border-right:1px solid; }
+  .corner.bl{ bottom:18px; left:18px; border-bottom:1px solid; border-left:1px solid; }
+  .corner.br{ bottom:18px; right:18px; border-bottom:1px solid; border-right:1px solid; }
+  .title-glow { text-shadow:0 0 40px rgba(228,201,138,.25); animation:pulseGlow 5s ease-in-out infinite; }
+  @keyframes pulseGlow { 0%,100%{ filter:drop-shadow(0 0 8px rgba(228,201,138,.15)); } 50%{ filter:drop-shadow(0 0 22px rgba(228,201,138,.45)); } }
+  .pulse-ring::after { content:''; position:absolute; inset:-1px; border-radius:9999px; border:1px solid rgba(228,201,138,.6); animation:ping 2.4s cubic-bezier(0,0,.2,1) infinite; }
+  @keyframes ping { 0%{ transform:scale(1); opacity:.8 } 100%{ transform:scale(1.35,1.9); opacity:0 } }
+  .blob { position:absolute; border-radius:50%; filter:blur(90px); opacity:.55; will-change:transform; }
+  .b1 { width:55vmax; height:55vmax; left:-15vmax; top:-10vmax; background:radial-gradient(circle, rgba(201,165,90,.35), transparent 65%); animation:blob1 26s ease-in-out infinite alternate; }
+  .b2 { width:50vmax; height:50vmax; right:-18vmax; top:20vh; background:radial-gradient(circle, rgba(110,70,190,.38), transparent 65%); animation:blob2 32s ease-in-out infinite alternate; }
+  .b3 { width:45vmax; height:45vmax; left:20vw; bottom:-22vmax; background:radial-gradient(circle, rgba(30,110,140,.32), transparent 65%); animation:blob1 38s ease-in-out infinite alternate-reverse; }
+  @keyframes blob1 { to { transform:translate(12vw,10vh) scale(1.15); } }
+  @keyframes blob2 { to { transform:translate(-14vw,-8vh) scale(1.2); } }
+  .beam { position:absolute; top:-10vh; width:26vw; height:120vh; transform-origin:50% 0;
+    background:linear-gradient(to bottom, rgba(241,222,176,.16), rgba(241,222,176,.04) 55%, transparent 90%);
+    -webkit-mask-image:linear-gradient(to right, transparent, #000 50%, transparent); mask-image:linear-gradient(to right, transparent, #000 50%, transparent);
+    filter:blur(6px); }
+  .beam.a { left:8vw; transform:rotate(14deg); animation:sway 14s ease-in-out infinite alternate; }
+  .beam.b { left:37vw; transform:rotate(-2deg); opacity:.8; animation:sway 18s ease-in-out infinite alternate-reverse; }
+  .beam.c { right:6vw; transform:rotate(-14deg); animation:sway 16s ease-in-out infinite alternate; }
+  @keyframes sway { from{ transform:rotate(var(--r0,-6deg)); } to{ transform:rotate(var(--r1,6deg)); } }
+  .beam.a { --r0:8deg; --r1:20deg; } .beam.b { --r0:-8deg; --r1:5deg; } .beam.c { --r0:-20deg; --r1:-8deg; }
+  .gridlines { background-image:linear-gradient(rgba(201,165,90,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(201,165,90,.07) 1px, transparent 1px);
+    background-size:64px 64px; -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 30%, #000, transparent 75%); mask-image:radial-gradient(ellipse 80% 70% at 50% 30%, #000, transparent 75%); }
+  .vignette { background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); }
+  .noise { opacity:.07; mix-blend-mode:overlay; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+  canvas.field { position:absolute; inset:0; width:100%; height:100%; }
+  @media (prefers-reduced-motion: reduce){ .sunburst,.spin-slow,.spin-rev,.blob,.beam,.title-glow{ animation:none !important; } }
+  ::-webkit-scrollbar{ width:8px } ::-webkit-scrollbar-thumb{ background:#2a2a33; border-radius:4px } ::-webkit-scrollbar-track{ background:#07070a }
+</style>
+</head>
+<body class="min-h-screen antialiased">
+
+<!-- ========== 인트로 ========== -->
+<section id="intro" class="fixed inset-0 z-40 flex items-center justify-center overflow-hidden text-center px-6" style="background:#07070a">
+  <!-- 배경 연출 -->
+  <div class="layer" style="background:radial-gradient(ellipse 70% 55% at 50% 45%, #1a1424 0%, #0b0a10 55%, #050507 100%)"></div>
+  <div class="layer"><div class="sunburst"></div></div>
+  <canvas id="intro-field" class="field"></canvas>
+  <div id="dust" class="layer"></div>
+  <div class="layer flex items-center justify-center">
+    <div class="spin-slow absolute w-[110vmin] h-[110vmin]">
+      <svg viewBox="0 0 400 400" class="w-full h-full" fill="none" stroke="#c9a55a">
+        <circle cx="200" cy="200" r="198" stroke-opacity=".35" stroke-width=".6"/>
+        <circle cx="200" cy="200" r="190" stroke-opacity=".6" stroke-width="3" stroke-dasharray="1 7.2"/>
+        <circle cx="200" cy="200" r="176" stroke-opacity=".25" stroke-width=".5" stroke-dasharray="14 6"/>
+      </svg>
+    </div>
+    <div class="spin-rev absolute w-[78vmin] h-[78vmin]">
+      <svg viewBox="0 0 400 400" class="w-full h-full" fill="none" stroke="#e4c98a">
+        <circle cx="200" cy="200" r="198" stroke-opacity=".3" stroke-width=".6"/>
+        <circle cx="200" cy="200" r="188" stroke-opacity=".5" stroke-width="5" stroke-dasharray="1 24"/>
+        <path d="M200 6 L206 14 L200 22 L194 14Z M200 378 L206 386 L200 394 L194 386Z M6 200 L14 194 L22 200 L14 206Z M378 200 L386 194 L394 200 L386 206Z" fill="#e4c98a" stroke="none" opacity=".8"/>
+      </svg>
+    </div>
+    <div class="absolute w-[70vmin] h-[70vmin] rounded-full" style="background:radial-gradient(circle, rgba(201,165,90,.2), transparent 65%)"></div>
+  </div>
+  <div class="layer spot" id="intro-spot"></div>
+  <div class="layer vignette"></div>
+  <div class="layer noise"></div>
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <div class="relative z-10 max-w-2xl">
+    <div class="rise text-gold-500 tracking-[.5em] text-xs sm:text-sm font-display mb-6" style="animation-delay:.2s">HALL OF FAME</div>
+    <div class="rise mx-auto mb-6 h-px w-24 bg-gradient-to-r from-transparent via-gold-500 to-transparent" style="animation-delay:.4s"></div>
+    <h1 class="rise font-serif font-semibold text-4xl sm:text-6xl md:text-7xl leading-tight shimmer gold-text title-glow" style="animation-delay:.6s">
+      축전 명예의 전당
+    </h1>
+    <div class="rise mt-5 flex items-center justify-center gap-3 text-gold-500/80 text-[10px] sm:text-xs font-display tracking-[.4em]" style="animation-delay:.8s">
+      <span>✦</span><span>CELEBRATION ARCHIVE</span><span>✦</span>
+    </div>
+    <p class="rise mt-6 text-sm sm:text-base text-zinc-400 font-light leading-relaxed" style="animation-delay:.9s">
+      마음을 담아 보내주신 소중한 축전들을<br class="sm:hidden"> 이곳에 영원히 간직합니다.
+    </p>
+    <button id="enter-btn"
+      class="rise pulse-ring group relative mt-12 px-10 py-4 font-display tracking-[.35em] text-sm text-gold-300 border border-gold-500/60 rounded-full overflow-hidden transition hover:text-black hover:shadow-[0_0_40px_rgba(201,165,90,.5)]"
+      style="animation-delay:1.2s">
+      <span class="absolute inset-0 bg-gradient-to-r from-gold-500 to-gold-300 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></span>
+      <span class="relative">입장하기</span>
+    </button>
+    <p class="rise mt-6 text-[11px] text-zinc-600 tracking-widest" style="animation-delay:1.5s">♪ 입장 시 배경음악이 재생됩니다</p>
+  </div>
+</section>
+
+<!-- ========== BGM 컨트롤 ========== -->
+<div id="bgm" class="fixed top-3 right-3 sm:top-5 sm:right-5 z-30 hidden items-center gap-3 px-3 py-2 rounded-full bg-black/60 backdrop-blur-md border border-gold-500/30 shadow-lg">
+  <button id="bgm-toggle" aria-label="BGM 켜기/끄기" class="flex items-center gap-2 text-gold-300 hover:text-white transition">
+    <span class="eq on" id="eq"><span></span><span></span><span></span><span></span></span>
+    <span id="bgm-label" class="text-[11px] font-display tracking-widest w-14 text-left">BGM ON</span>
+  </button>
+  <input id="vol" type="range" min="0" max="100" value="50" aria-label="음량" class="w-16 sm:w-24">
+</div>
+
+<!-- ========== 메인 배경 ========== -->
+<div id="bg" class="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
+  <div class="layer" style="background:linear-gradient(180deg,#0c0a12 0%,#07070a 55%,#0a0810 100%)"></div>
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="layer gridlines"></div>
+  <div class="beam a"></div><div class="beam b"></div><div class="beam c"></div>
+  <canvas id="main-field" class="field"></canvas>
+  <div class="layer spot"></div>
+  <div class="layer" style="background:radial-gradient(ellipse 60% 22% at 50% 105%, rgba(228,201,138,.18), transparent 70%)"></div>
+  <div class="layer vignette"></div>
+  <div class="layer noise"></div>
+</div>
+
+<!-- ========== 메인 ========== -->
+<main id="main" class="relative z-10 hidden-main opacity-0 min-h-screen">
+  <header class="text-center pt-20 pb-10 px-6">
+    <div class="text-gold-500 tracking-[.5em] text-[10px] sm:text-xs font-display">HALL OF FAME</div>
+    <h2 class="mt-3 font-serif font-semibold text-3xl sm:text-5xl shimmer gold-text">축전 명예의 전당</h2>
+    <div class="mx-auto mt-6 flex items-center justify-center gap-3">
+      <span class="h-px w-16 bg-gradient-to-r from-transparent to-gold-500"></span>
+      <span class="text-gold-500 text-xs">◆</span>
+      <span class="h-px w-16 bg-gradient-to-l from-transparent to-gold-500"></span>
+    </div>
+    <p class="mt-5 text-sm text-zinc-400 font-light">총 <span id="count" class="text-gold-300 font-display"></span>분의 축전 · 이미지를 눌러 보낸 분을 확인하세요</p>
+  </header>
+
+  <section id="grid" class="max-w-7xl mx-auto px-4 sm:px-8 pb-24 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6"></section>
+
+  <footer class="text-center pb-12 text-xs text-zinc-600 tracking-widest font-display">— WITH GRATITUDE —</footer>
+</main>
+
+<!-- ========== 모달 ========== -->
+<div id="modal" class="fixed inset-0 z-50 opacity-0 pointer-events-none flex items-center justify-center bg-black/90 backdrop-blur-md p-4" aria-modal="true" role="dialog">
+  <button id="m-close" aria-label="닫기" class="absolute top-4 right-4 w-11 h-11 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-xl">✕</button>
+  <button id="m-prev" aria-label="이전" class="absolute left-2 sm:left-8 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-2xl leading-none">‹</button>
+  <button id="m-next" aria-label="다음" class="absolute right-2 sm:right-8 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-2xl leading-none">›</button>
+  <figure class="relative max-w-4xl w-full text-center px-10 sm:px-20">
+    <div class="absolute inset-0 -z-10 rounded-full" style="background:radial-gradient(circle, rgba(201,165,90,.18), transparent 65%)"></div>
+    <img id="modal-img" alt="" class="mx-auto max-w-full object-contain rounded-lg border border-gold-500/30 shadow-[0_0_80px_-10px_rgba(201,165,90,.4)]">
+    <figcaption class="mt-6">
+      <div class="text-[11px] tracking-[.4em] text-gold-500 font-display">FROM</div>
+      <div id="modal-name" class="mt-2 text-2xl sm:text-4xl font-serif font-semibold gold-text"></div>
+      <div id="modal-idx" class="mt-3 text-xs text-zinc-500 font-display tracking-widest"></div>
+    </figcaption>
+  </figure>
+</div>
+
+<script>
+(() => {
+  // 파일 목록 (이름.webp → 이름이 보낸 사람)
+  const FILES = [
+    'Dayun','KMR','척추','천화','최애냥','추다이','키티','포당','한결','헬름','힘냉',
+    '김기린','넷츠','다라','달구름','레이','리버','물고기 지나가요','서북','시로','아리마',
+    '아이렉','야마타노오로치','어둠의율자','예압','유몽','이잉','작담이','지누','산맥'
+  ].map(n => n + '.webp');
+
+  const items = FILES.map(f => ({ src: encodeURI(f), name: f.replace(/\.webp$/i, '') }));
+  const $ = id => document.getElementById(id);
+
+  // 인트로 먼지 효과
+  const dust = $('dust');
+  for (let i = 0; i < 30; i++) {
+    const d = document.createElement('i'); d.className = 'dust';
+    const s = 2 + Math.random() * 4;
+    d.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${100 + Math.random()*20}%;animation-duration:${10+Math.random()*14}s;animation-delay:${-Math.random()*20}s`;
+    dust.appendChild(d);
+  }
+
+  // 마우스/터치 조명
+  const setSpot = (x, y) => { const r = document.documentElement.style; r.setProperty('--mx', x + 'px'); r.setProperty('--my', y + 'px'); };
+  addEventListener('pointermove', e => setSpot(e.clientX, e.clientY), { passive: true });
+  setSpot(innerWidth / 2, innerHeight / 2);
+
+  // 파티클 필드 (별 반짝임 + 떠오르는 불씨 + 보케)
+  function field(canvas, { stars, embers, bokeh }) {
+    const ctx = canvas.getContext('2d');
+    let W, H, P = [];
+    const R = Math.random;
+    const size = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    size(); addEventListener('resize', size);
+    const mk = (t, init) => ({ t, x: R() * W, y: init ? R() * H : H + 20, r: 0, vx: 0, vy: 0, a: 0, ph: R() * 6.28, sp: .5 + R() * 1.5 });
+    for (let i = 0; i < stars; i++) { const p = mk('s', true); p.r = .4 + R() * 1.2; p.vy = 0; p.vx = 0; P.push(p); }
+    for (let i = 0; i < embers; i++) { const p = mk('e', true); p.r = .8 + R() * 1.8; p.vy = -(.15 + R() * .5); p.vx = (R() - .5) * .25; P.push(p); }
+    for (let i = 0; i < bokeh; i++) { const p = mk('b', true); p.r = 14 + R() * 38; p.vy = -(.05 + R() * .15); p.vx = (R() - .5) * .1; P.push(p); }
+    let t = 0;
+    (function loop() {
+      if (!canvas.isConnected) return;
+      requestAnimationFrame(loop);
+      t += .016; ctx.clearRect(0, 0, W, H);
+      for (const p of P) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -60) { p.y = H + 40; p.x = R() * W; }
+        if (p.x < -60) p.x = W + 40; if (p.x > W + 60) p.x = -40;
+        const tw = .5 + .5 * Math.sin(t * p.sp + p.ph);
+        if (p.t === 's') {
+          ctx.globalAlpha = .15 + tw * .85; ctx.fillStyle = '#fff4d6';
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+          if (p.r > 1.1 && tw > .8) { ctx.strokeStyle = 'rgba(255,244,214,.6)'; ctx.lineWidth = .6; ctx.beginPath();
+            ctx.moveTo(p.x - 5, p.y); ctx.lineTo(p.x + 5, p.y); ctx.moveTo(p.x, p.y - 5); ctx.lineTo(p.x, p.y + 5); ctx.stroke(); }
+        } else if (p.t === 'e') {
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+          g.addColorStop(0, 'rgba(255,230,160,.95)'); g.addColorStop(1, 'rgba(228,201,138,0)');
+          ctx.globalAlpha = .35 + tw * .65; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 4, 0, 6.283); ctx.fill();
+        } else {
+          ctx.globalAlpha = .05 + tw * .07; ctx.fillStyle = '#e4c98a';
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+          ctx.globalAlpha = .1 + tw * .1; ctx.strokeStyle = '#f1deb0'; ctx.lineWidth = .8; ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+    })();
+  }
+  const small = innerWidth < 640;
+  field($('intro-field'), { stars: small ? 60 : 130, embers: small ? 30 : 60, bokeh: 0 });
+  field($('main-field'), { stars: small ? 50 : 110, embers: small ? 16 : 36, bokeh: small ? 6 : 12 });
+
+  // 그리드 생성
+  $('count').textContent = items.length;
+  const grid = $('grid');
+  items.forEach((it, i) => {
+    const c = document.createElement('div');
+    c.className = 'card aspect-[3/4]'; c.tabIndex = 0; c.setAttribute('role', 'button');
+    c.setAttribute('aria-label', it.name + '님의 축전');
+    c.style.transitionDelay = '0ms';
+    c.innerHTML = `<img src="${it.src}" alt="${it.name}님의 축전" loading="lazy" decoding="async"><div class="cap font-serif">${it.name}</div>`;
+    const img = c.querySelector('img');
+    img.onerror = () => { img.style.display = 'none'; c.insertAdjacentHTML('afterbegin',
+      `<div class="absolute inset-0 flex items-center justify-center text-gold-500/60 text-xs p-2 text-center">이미지를 불러올 수 없습니다</div>`); };
+    c.addEventListener('click', () => openModal(i));
+    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(i); } });
+    grid.appendChild(c);
+  });
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }), { threshold: .08 });
+  const observeCards = () => grid.querySelectorAll('.card').forEach((c, i) => { c.style.transitionDelay = (i % 5) * 70 + 'ms'; io.observe(c); });
+
+  // BGM
+  const bgm = new Audio('bgm.mp3');
+  bgm.loop = true; bgm.volume = 0.5; bgm.preload = 'auto';
+  let bgmOn = false;
+  const setUI = () => {
+    $('bgm-label').textContent = bgmOn ? 'BGM ON' : 'BGM OFF';
+    $('eq').classList.toggle('on', bgmOn);
+  };
+  const playBgm = () => bgm.play().then(() => { bgmOn = true; setUI(); }).catch(() => { bgmOn = false; setUI(); });
+  $('bgm-toggle').addEventListener('click', () => {
+    if (bgmOn) { bgm.pause(); bgmOn = false; setUI(); } else playBgm();
+  });
+  $('vol').addEventListener('input', e => { bgm.volume = e.target.value / 100; });
+
+  // 입장
+  let entered = false;
+  const enter = () => {
+    if (entered) return; entered = true;
+    playBgm(); // 사용자 클릭 직후 재생 → 자동재생 정책 통과
+    const intro = $('intro'), main = $('main'), panel = $('bgm');
+    intro.classList.add('fade-out');
+    main.classList.remove('hidden');
+    window.scrollTo(0, 0);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      main.classList.remove('hidden-main'); main.style.opacity = 1;
+      panel.classList.remove('hidden'); panel.classList.add('flex');
+      observeCards();
+    }));
+    setTimeout(() => intro.remove(), 1300);
+  };
+  $('enter-btn').addEventListener('click', e => { e.stopPropagation(); enter(); });
+  $('intro').addEventListener('click', enter);
+
+  // 모달
+  let cur = 0;
+  const modal = $('modal'), mimg = $('modal-img');
+  const show = i => {
+    cur = (i + items.length) % items.length;
+    const it = items[cur];
+    mimg.style.opacity = 0; mimg.style.transform = 'scale(.97)';
+    setTimeout(() => {
+      mimg.src = it.src; mimg.alt = it.name + '님의 축전';
+      $('modal-name').textContent = it.name;
+      $('modal-idx').textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(items.length).padStart(2, '0');
+    }, 120);
+  };
+  mimg.addEventListener('load', () => { mimg.style.opacity = 1; mimg.style.transform = 'none'; });
+  mimg.addEventListener('error', () => { mimg.style.opacity = 1; });
+  function openModal(i) { modal.classList.add('show'); document.body.style.overflow = 'hidden'; show(i); }
+  function closeModal() { modal.classList.remove('show'); document.body.style.overflow = ''; }
+  $('m-close').addEventListener('click', closeModal);
+  $('m-prev').addEventListener('click', e => { e.stopPropagation(); show(cur - 1); });
+  $('m-next').addEventListener('click', e => { e.stopPropagation(); show(cur + 1); });
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (!modal.classList.contains('show')) { if (!entered && (e.key === 'Enter')) enter(); return; }
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowLeft') show(cur - 1);
+    if (e.key === 'ArrowRight') show(cur + 1);
+  });
+  // 모바일 스와이프
+  let tx = 0;
+  modal.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; }, { passive: true });
+  modal.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 60) show(cur + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
