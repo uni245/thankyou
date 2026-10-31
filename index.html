@@ -200,9 +200,9 @@ tailwind.config = {
 
 <!-- ========== 모달 ========== -->
 <div id="modal" class="fixed inset-0 z-50 opacity-0 pointer-events-none flex items-center justify-center bg-black/90 backdrop-blur-md p-4" aria-modal="true" role="dialog">
-  <button id="m-close" aria-label="닫기" class="absolute top-4 right-4 w-11 h-11 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-xl">✕</button>
-  <button id="m-prev" aria-label="이전" class="absolute left-2 sm:left-8 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-2xl leading-none">‹</button>
-  <button id="m-next" aria-label="다음" class="absolute right-2 sm:right-8 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-2xl leading-none">›</button>
+  <button id="m-close" aria-label="닫기" class="absolute z-20 top-4 right-4 w-11 h-11 bg-black/60 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-xl">✕</button>
+  <button id="m-prev" aria-label="이전" class="absolute z-20 left-2 sm:left-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/60 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-2xl leading-none">‹</button>
+  <button id="m-next" aria-label="다음" class="absolute z-20 right-2 sm:right-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/60 rounded-full border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-black transition text-2xl leading-none">›</button>
   <figure class="relative max-w-4xl w-full text-center px-10 sm:px-20">
     <div class="absolute inset-0 -z-10 rounded-full" style="background:radial-gradient(circle, rgba(201,165,90,.18), transparent 65%)"></div>
     <img id="modal-img" alt="" class="mx-auto max-w-full object-contain rounded-lg border border-gold-500/30 shadow-[0_0_80px_-10px_rgba(201,165,90,.4)]">
@@ -369,12 +369,21 @@ tailwind.config = {
     if (e.key === 'ArrowRight') show(cur + 1);
   });
   // 모바일 스와이프
-  let tx = 0;
-  modal.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; }, { passive: true });
-  modal.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - tx;
-    if (Math.abs(dx) > 60) show(cur + (dx < 0 ? 1 : -1));
+  // 한 손가락 가로 스와이프만 인식 (핀치 확대/버튼 터치/확대 상태에서는 무시)
+  let tx = 0, ty = 0, multi = false, onBtn = false;
+  modal.addEventListener('touchstart', e => {
+    if (e.touches.length > 1) multi = true;
+    if (e.touches.length === 1) { multi = false; onBtn = !!e.target.closest('button'); tx = e.touches[0].clientX; ty = e.touches[0].clientY; }
   }, { passive: true });
+  modal.addEventListener('touchend', e => {
+    if (e.touches.length > 0) return;          // 아직 손가락이 남아있으면 대기
+    if (multi || onBtn) { multi = false; return; }
+    const scale = window.visualViewport ? window.visualViewport.scale : 1;
+    if (scale > 1.02) return;                  // 확대 중에는 넘기지 않음
+    const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8) show(cur + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  modal.addEventListener('touchcancel', () => { multi = true; }, { passive: true });
 })();
 </script>
 </body>
